@@ -120,7 +120,7 @@ export function main(param: GameMainParameterObject): void {
 				width: (scene.assets[obj.assetSrc] as g.ImageAsset).width,
 				height: (scene.assets[obj.assetSrc] as g.ImageAsset).height,
 				x: xPos,
-				y: (getHighestPos(base.y) - 100)
+				y: getHighestPos(base.y) - 100
 			})
 			scene.append(entity)
 			entity.modified()
@@ -142,6 +142,7 @@ export function main(param: GameMainParameterObject): void {
 			// X座標取得。ドラッグでできるように
 			scene.pointMoveCapture.add((event) => {
 				createBody.entity.x += event.prevDelta.x
+				// Sprite移動だけではだめなので
 				createBody.b2body.SetPosition(box.vec2(createBody.entity.x + entity.width / 2, createBody.entity.y + entity.height / 2))
 				createBody.entity.modified()
 			})
@@ -161,19 +162,29 @@ export function main(param: GameMainParameterObject): void {
 			if (!isNotTouchObjctExists) {
 				const bodyObj = createObject(nKou, (g.game.width / 2))
 			}
-		}, 3 * 1000)
+		}, 2 * 1000)
 
 		// カメラ移動、スコアラベル、時間ラベル移動など
 		const camera = new g.Camera2D({ game: g.game })
 		g.game.focusingCamera = camera
 		g.game.modified = true
 		scene.update.add(() => {
-			// 一番高いところにある物体を取得
+			// 一番高いところにある物体のの座標
 			const highest = getHighestPos(0)
-			// 一番低いところにある物体を取得
-			const lowest = getLowestPos(0)
-			if (highest < 0) {
+			// 一番低いところにある物体のの座標。今回は受け皿
+			const lowest = base.y
+			console.log(`一番高い:${Math.round(highest)} / 一番低い:${Math.round(lowest)}`)
+			// 絶対値計算
+			let abs = Math.abs(lowest - highest)
+			if (bodyObjectList.length === 0) {
+				abs = 0
+			}
+			console.log(abs > g.game.height)
+			if (abs > g.game.height - 100) {
 				camera.y = highest - 100
+				camera.modified()
+			} else {
+				camera.y = 0
 				camera.modified()
 			}
 			// スコア、残り時間も移動
@@ -182,8 +193,6 @@ export function main(param: GameMainParameterObject): void {
 			timeLabel.y = camera.y
 			timeLabel.modified()
 			// 一番高いところをスコアに
-			// 絶対値計算
-			const abs = Math.abs(lowest - highest)
 			// 小数点以下切り捨て
 			g.game.vars.gameState.score = Math.round(abs)
 			scoreLabel.text = `SCORE: ${g.game.vars.gameState.score}`
@@ -208,9 +217,10 @@ export function main(param: GameMainParameterObject): void {
 			return pos
 		}
 
-		/** 一番低いところにある物体の高さを取得します。
+		/** 一番低いところにある物体の底辺の座標を取得します。
+		 * 例えば■が一番下にあったとき、■のY座標から■の高さだけ引いたものです。
 		 * @param defaultValue もし取れなかった場合は返り値になります
-		 * @returns 一番低いY座標。
+		 * @returns 低いところにある物体の底辺の座標。
 		 */
 		const getLowestPos = (defaultValue: number = 0): number => {
 			let pos = defaultValue
@@ -227,7 +237,7 @@ export function main(param: GameMainParameterObject): void {
 					if (a.entity.y > b.entity.y) return -1
 					return 0
 				})
-				pos = tmpList[0].entity.y
+				pos = tmpList[0].entity.y - tmpList[0].entity.height
 			}
 			return pos
 		}
