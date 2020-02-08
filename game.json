@@ -96,6 +96,12 @@
 			"width": 640,
 			"height": 320,
 			"path": "image/title.png"
+		},
+		"doutei_toomo": {
+			"type": "image",
+			"width": 80,
+			"height": 44,
+			"path": "image/doutei_toomo.png"
 		}
 	},
 	"environment": {

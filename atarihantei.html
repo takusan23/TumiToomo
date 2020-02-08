@@ -9,7 +9,7 @@
 </head>
 
 <body>
-    <img id="img" src="image/n_kou.png">
+    <img id="img" src="image/korean.png">
     <input type="button" id="reset" value="リセット">
     <div id="source"></div>
 </body>
@@ -20,10 +20,14 @@
     const btn = document.getElementById('reset')
     const source = document.getElementById('source')
 
-
-    // 画像変更時は必ず画像の大きさを入力してください。
-    let imgHeight = 50
-    let imgWidth = 50
+    var image = new Image();
+    var imgWidth;
+    var imgHeight;
+    image.onload = function () {
+        imgWidth = image.width;
+        imgHeight = image.height;
+    };
+    image.src = img.getAttribute('src')
 
     btn.onclick = () => {
         posList = []

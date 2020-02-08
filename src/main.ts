@@ -11,7 +11,7 @@ export function main(param: GameMainParameterObject): void {
 	const scene = new g.Scene({
 		game: g.game,
 		// このシーンで利用するアセットのIDを列挙し、シーンに通知します
-		assetIds: ["toomo", "kiyomizu", "n_kou", "result"]
+		assetIds: ["toomo", "kiyomizu", "n_kou", "result", "doutei_toomo", "inu", "gozyou", "korean"]
 	})
 
 	let time = 60 // 制限時間
@@ -118,7 +118,77 @@ export function main(param: GameMainParameterObject): void {
 						box.vec2(-25, -25)
 					]
 				}
-				const bodyTemplateList = [nKou]
+				const dt: BodyObject = {
+					assetSrc: "doutei_toomo",
+					bodyName: "DT",
+					sharpList: [
+						box.vec2(40, -21),
+						box.vec2(40, 21),
+						box.vec2(-40, 21),
+						box.vec2(-40, -21)
+					]
+				}
+				const toomo: BodyObject = {
+					assetSrc: "toomo",
+					bodyName: "トーモ",
+					sharpList: [
+						box.vec2(8.5, -37.5),
+						box.vec2(25.5, -15.5),
+						box.vec2(25.5, 16.5),
+						box.vec2(19.5, 36.5),
+						box.vec2(-14.5, 36.5),
+						box.vec2(-31.5, 16.5),
+						box.vec2(-36.5, -10.5),
+						box.vec2(-15.5, -37.5)
+					]
+				}
+				const remon: BodyObject = {
+					assetSrc: "inu",
+					bodyName: "レモン",
+					sharpList: [
+						box.vec2(13, -39.5),
+						box.vec2(49, -4.5),
+						box.vec2(50, 21.5),
+						box.vec2(35, 39.5),
+						box.vec2(-22, 40.5),
+						box.vec2(-50, 21.5),
+						box.vec2(-34, -25.5),
+						box.vec2(-10, -39.5)
+					]
+				}
+				const gozyou: BodyObject = {
+					assetSrc: "gozyou",
+					bodyName: "五条",
+					sharpList: [
+						box.vec2(0, -37.5),
+						box.vec2(19, -32.5),
+						box.vec2(28, -12.5),
+						box.vec2(21, 11.5),
+						box.vec2(5, 34.5),
+						box.vec2(-7, 35.5),
+						box.vec2(-23, 19.5),
+						box.vec2(-30, 1.5),
+						box.vec2(-30, -15.5),
+						box.vec2(-22, -31.5),
+						box.vec2(-5, -37.5)
+					]
+				}
+				const korean: BodyObject = {
+					assetSrc: "korean",
+					bodyName: "韓国",
+					sharpList: [
+						box.vec2(8, -33.5),
+						box.vec2(20, -19.5),
+						box.vec2(18, 6.5),
+						box.vec2(8, 33.5),
+						box.vec2(-13, 33.5),
+						box.vec2(-31, 7.5),
+						box.vec2(-35, -10.5),
+						box.vec2(-27, -31.5)
+					]
+				}
+				// 利用可能な物体一覧
+				const bodyTemplateList = [nKou, dt, toomo, remon, gozyou, korean]
 
 				/** 一番高いところにある物体の高さを取得します。
 				 * @param defaultValue もし取れなかった場合は返り値になります
@@ -136,6 +206,11 @@ export function main(param: GameMainParameterObject): void {
 						pos = tmpList[0].entity.y
 					}
 					return pos
+				}
+
+				/** 乱数生成機。長いので短くするだけで中身はAkashic Engineのものを利用している。JSの物を使うとタイムシフトでの動作がおかしくなるためだって */
+				const random = (min: number, max: number): number => {
+					return g.game.random.get(min, max)
 				}
 
 				/** 触っていないオブジェクトが存在する場合はtrue
@@ -211,8 +286,22 @@ export function main(param: GameMainParameterObject): void {
 
 				// 画像生成。
 				createObject(nKou, (g.game.width / 2))
+				/** クリック連打対策用変数。クリック可能な場合はtrue。クリックすると物体生成までクリックできません。 */
+				let clickable = true
 				scene.pointUpCapture.add(() => {
-					setTimeout(() => { createObject(nKou, (g.game.width / 2)) }, 2000)
+					// クリック可能か？
+					if (clickable) {
+						// クリックできないように
+						clickable = false
+						// 2秒後に生成
+						scene.setTimeout(() => {
+							// ランダム
+							const randomValue = random(0, bodyTemplateList.length - 1)
+							createObject(bodyTemplateList[randomValue], (g.game.width / 2))
+							// クリック可能に
+							clickable = true
+						}, 2000)
+					}
 				})
 
 				// カメラ移動、スコアラベル、時間ラベル移動など
@@ -290,6 +379,12 @@ export function main(param: GameMainParameterObject): void {
 					if (time <= 5) {
 						// クリックイベント削除。これで遊べなくなります
 						scene.pointMoveCapture.removeAll()
+						// カメラ戻す
+						camera.y = 0
+						camera.modified()
+						// すべてのイベント削除
+						scene.update.removeAll()
+						scene.pointDownCapture.removeAll()
 						// しゅうりょうー
 						const resultSprite = new g.Sprite({ scene: scene, src: scene.assets["result"] })
 						scene.append(resultSprite)
@@ -381,7 +476,7 @@ export function main(param: GameMainParameterObject): void {
 					time -= 1
 					if (time - 5 >= 0) {
 						// カウントダウン処理
-						// ゲームが遊べる時は60秒。でもゲームは65秒あるので引いておく。
+						// ゲームが遊べる時は60秒。でもゲームは70秒あるので引いておく。
 						// 5秒足して置くことで読み込み遅れても5秒なら耐えられる。
 						timeLabel.text = "残り時間: " + Math.ceil(time - 5) + "秒"
 						timeLabel.invalidate()
