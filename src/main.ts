@@ -134,6 +134,15 @@ export function main(param: GameMainParameterObject): void {
 				type: b2.BodyType.Dynamic
 			})
 			const createBody = box.createBody(entity, entityDef, entityFixDef)
+
+			// Q:これはなにか？ A:もし動かしてるときに詰んでたたわーが崩れるとカメラが移動する→移動中の物体が見切れる　これを対策するため
+			entity.update.add(() => {
+				entity.y = getHighestPos(base.y) - 100
+				// Sprite移動だけではだめなので
+				createBody.b2body.SetPosition(box.vec2(createBody.entity.x + entity.width / 2, createBody.entity.y + entity.height / 2))
+				entity.modified()
+			})
+
 			// 押すまでオブジェクトを睡眠？停止状態にする。寝てる間はDynamicでも動かない
 			// 睡眠状態を利用可能にする
 			createBody.b2body.SetSleepingAllowed(true)
@@ -153,6 +162,7 @@ export function main(param: GameMainParameterObject): void {
 				// 落としたら移動できないようにイベント消す
 				scene.pointMoveCapture.removeAll()
 				scene.pointUpCapture.removeAll()
+				entity.update.removeAll()
 				bodyObjectList.push(createBody)
 			})
 			return createBody
