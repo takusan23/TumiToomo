@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <img id="img" src="image/n_kou.png">
+    <input type="button" id="reset" value="リセット">
+    <div id="source"></div>
+</body>
+
+<script>
+    let posList = []
+    const img = document.getElementById('img')
+    const btn = document.getElementById('reset')
+    const source = document.getElementById('source')
+
+
+    // 画像変更時は必ず画像の大きさを入力してください。
+    let imgHeight = 50
+    let imgWidth = 50
+
+    btn.onclick = () => {
+        posList = []
+        source.innerHTML = ``
+    }
+    img.addEventListener('click', (event) => {
+        let xPos = event.offsetX
+        let yPos = event.offsetY
+
+
+        xPos = event.offsetX - (imgWidth / 2)
+        yPos = event.offsetY - (imgHeight / 2)
+
+        const text = `box.vec2(${xPos}, ${yPos})`
+
+        console.log(`X : ${xPos} / Y : ${yPos}`)
+
+        posList.push(text)
+
+        source.innerHTML = ``
+        posList.forEach(program => {
+            source.innerHTML = `${source.innerHTML}<br>${program}`
+        })
+
+    })
+</script>
+
+</html>
