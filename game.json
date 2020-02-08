@@ -84,6 +84,18 @@
 			"width": 75,
 			"height": 75,
 			"path": "image/toomo.png"
+		},
+		"result": {
+			"type": "image",
+			"width": 640,
+			"height": 320,
+			"path": "image/result.png"
+		},
+		"title": {
+			"type": "image",
+			"width": 640,
+			"height": 320,
+			"path": "image/title.png"
 		}
 	},
 	"environment": {
