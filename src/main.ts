@@ -1,6 +1,8 @@
 import { GameMainParameterObject, RPGAtsumaruWindow } from "./parameterObject"
 // 物理エンジン
 import * as b2 from "@akashic-extension/akashic-box2d"
+// 複数行表示に対応したLabelなど
+import * as al from "@akashic-extension/akashic-label"
 
 declare const window: RPGAtsumaruWindow
 
@@ -9,8 +11,9 @@ export function main(param: GameMainParameterObject): void {
 	const scene = new g.Scene({
 		game: g.game,
 		// このシーンで利用するアセットのIDを列挙し、シーンに通知します
-		assetIds: ["toomo", "kiyomizu", "n_kou"]
+		assetIds: ["toomo", "kiyomizu", "n_kou", "result"]
 	})
+
 	let time = 60 // 制限時間
 	if (param.sessionParameter.totalTimeLimit) {
 		time = param.sessionParameter.totalTimeLimit // セッションパラメータで制限時間が指定されたらその値を使用します
@@ -20,13 +23,15 @@ export function main(param: GameMainParameterObject): void {
 
 	/** 物体のオブジェクト */
 	interface BodyObject {
-		/** @param assetSrc 画像の名前。assetIdsに書かないと動かないよ */
+		/** @param assetSrc アセット画像の名前。assetIdsに書かないと動かないよ */
 		assetSrc: string
 		/** @param sharpList 当たり判定の形状。 */
 		sharpList: b2.Box2DWeb.Common.Math.b2Vec2[]
+		/** @param bodyName 物体の名前。N高等学校など */
+		bodyName: string
 	}
-	// 生成した物体の配列
-	const bodyObjectList: b2.Box2DOptions.EBody[] = []
+	/** 生成した物体(Box2dとかentity)の配列 */
+	const bodyList: b2.Box2DOptions.EBody[] = []
 
 	/** タイトル画面作成 */
 	const titleScene = new g.Scene({ game: g.game, assetIds: ["title"] })
@@ -105,6 +110,7 @@ export function main(param: GameMainParameterObject): void {
 				// 物体生成
 				const nKou: BodyObject = {
 					assetSrc: "n_kou",
+					bodyName: "N高",
 					sharpList: [
 						box.vec2(25, -25),
 						box.vec2(25, 25),
@@ -112,7 +118,7 @@ export function main(param: GameMainParameterObject): void {
 						box.vec2(-25, -25)
 					]
 				}
-				const bodyList = [nKou]
+				const bodyTemplateList = [nKou]
 
 				/** 一番高いところにある物体の高さを取得します。
 				 * @param defaultValue もし取れなかった場合は返り値になります
@@ -120,7 +126,7 @@ export function main(param: GameMainParameterObject): void {
 				 */
 				const getHighestPos = (defaultValue: number = 0): number => {
 					let pos = defaultValue
-					const tmpList = bodyObjectList.concat()
+					const tmpList = bodyList.concat()
 					if (tmpList.length > 0) {
 						tmpList.sort((a, b) => {
 							if (a.entity.y < b.entity.y) return -1
@@ -131,6 +137,7 @@ export function main(param: GameMainParameterObject): void {
 					}
 					return pos
 				}
+
 				/** 触っていないオブジェクトが存在する場合はtrue
 				 * （まだ上にあって落下していないときはtrue）
 				 */
@@ -147,7 +154,8 @@ export function main(param: GameMainParameterObject): void {
 						width: (scene.assets[obj.assetSrc] as g.ImageAsset).width,
 						height: (scene.assets[obj.assetSrc] as g.ImageAsset).height,
 						x: xPos,
-						y: getHighestPos(base.y) - 100
+						y: getHighestPos(base.y) - 100,
+						tag: obj // tagにはBodyObject入れました。
 					})
 					scene.append(entity)
 					entity.modified()
@@ -194,12 +202,13 @@ export function main(param: GameMainParameterObject): void {
 						// カメラの移動と合わせて動かすイベント削除
 						entity.update.removeAll()
 						// 配列追加（一番高いなどを求めるときに使う。）
-						bodyObjectList.push(createBody)
+						bodyList.push(createBody)
 					}
 					// クリックを離したときイベント登録。
 					scene.pointUpCapture.add(pointDown)
 					return createBody
 				}
+
 				// 画像生成。
 				createObject(nKou, (g.game.width / 2))
 				scene.pointUpCapture.add(() => {
@@ -217,9 +226,11 @@ export function main(param: GameMainParameterObject): void {
 					const lowest = base.y
 					// 絶対値計算
 					let abs = Math.abs(lowest - highest)
-					if (bodyObjectList.length === 0) {
+					// ただし一回も物体を置いてない場合、受け皿の座標が絶対値になってしまうので対策
+					if (bodyList.length === 0) {
 						abs = 0
 					}
+					// カメラ移動
 					if (abs > g.game.height - 100) {
 						camera.y = highest - 100
 						camera.modified()
@@ -247,7 +258,7 @@ export function main(param: GameMainParameterObject): void {
 					let pos = defaultValue
 					const tmpList: b2.Box2DOptions.EBody[] = []
 					// 画面外の物体はいらない
-					bodyObjectList.forEach(obj => {
+					bodyList.forEach(obj => {
 						if (obj.entity.y <= g.game.height) {
 							tmpList.push(obj)
 						}
@@ -279,6 +290,92 @@ export function main(param: GameMainParameterObject): void {
 					if (time <= 5) {
 						// クリックイベント削除。これで遊べなくなります
 						scene.pointMoveCapture.removeAll()
+						// しゅうりょうー
+						const resultSprite = new g.Sprite({ scene: scene, src: scene.assets["result"] })
+						scene.append(resultSprite)
+						// 積み上げ結果
+						// 釣った結果ラベル
+						const resultLabel_1 = new al.Label({
+							scene: scene,
+							text: "",
+							fontSize: 20,
+							font: font,
+							textColor: "black",
+							width: 500,
+							x: 80,
+							y: 60
+						})
+						scene.append(resultLabel_1)
+						const resultLabel_2 = new al.Label({
+							scene: scene,
+							text: "",
+							fontSize: 20,
+							font: font,
+							textColor: "black",
+							width: 500,
+							x: (g.game.width / 2),
+							y: 60
+						})
+						scene.append(resultLabel_2)
+						// 出現回数表示
+						interface CountObj {
+							/** 物体の名前。N高等学校など */
+							name: string
+							/** 物体の数。乱数に偏りがあるよね！って見れたら面白い。 */
+							count: number
+						}
+						const countObjList: CountObj[] = []
+						bodyList.forEach(obj => {
+							const bodyObj = obj.entity.tag as BodyObject
+							const name = bodyObj.bodyName
+							// 配列にすでにあるか。無いとき-1
+							let countObjIndex = -1
+							countObjList.forEach(countObj => {
+								if (countObj.name === name) {
+									// あった
+									countObjIndex = countObjList.indexOf(countObj)
+								}
+							})
+							if (countObjIndex === -1) {
+								// なかった
+								const countObj: CountObj = {
+									name: name,
+									count: 1
+								}
+								countObjList.push(countObj)
+							} else {
+								// 1増やす
+								countObjList[countObjIndex].count++
+							}
+						})
+						// 点数の高い順に並べる
+						countObjList.sort((a, b) => {
+							if (a.count > b.count) return -1
+							if (a.count < b.count) return 1
+							return 0
+						})
+						// 表示
+						let resultText_1 = "" // 一列目
+						let resultText_2 = "" // 二列目
+						let writeLine = 0 // 何行目まで行ったかどうか
+						countObjList.forEach(countObj => {
+							const name = countObj.name
+							const count = countObj.count
+							writeLine++
+							// 次の行へ行くかどうか
+							if (writeLine > 10) {
+								// 二行目
+								resultText_2 = `${resultText_2}\n${name} : ${count}個`
+								resultLabel_2.text = resultText_2
+								resultLabel_2.invalidate()
+							} else {
+								// 一行目。１０行まで書ける
+								resultText_1 = `${resultText_1}\n${name} : ${count}個`
+								resultLabel_1.text = resultText_1
+								resultLabel_1.invalidate()
+							}
+						})
+
 					}
 					// 時間減らしていく
 					time -= 1

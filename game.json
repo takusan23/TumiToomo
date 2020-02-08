@@ -111,10 +111,16 @@
 		"node_modules/@akashic-extension/akashic-box2d/lib/Box2D.js",
 		"node_modules/@akashic-extension/akashic-box2d/lib/Box2DOptions.js",
 		"node_modules/@akashic-extension/akashic-box2d/lib/index.js",
-		"node_modules/box2dweb/box2d.js"
+		"node_modules/box2dweb/box2d.js",
+		"node_modules/@akashic-extension/akashic-label/lib/DefaultRubyParser.js",
+		"node_modules/@akashic-extension/akashic-label/lib/FragmentDrawInfo.js",
+		"node_modules/@akashic-extension/akashic-label/lib/Label.js",
+		"node_modules/@akashic-extension/akashic-label/lib/RubyParser.js",
+		"node_modules/@akashic-extension/akashic-label/lib/index.js"
 	],
 	"moduleMainScripts": {
 		"@akashic-extension/akashic-box2d": "node_modules/@akashic-extension/akashic-box2d/lib/index.js",
-		"box2dweb": "node_modules/box2dweb/box2d.js"
+		"box2dweb": "node_modules/box2dweb/box2d.js",
+		"@akashic-extension/akashic-label": "node_modules/@akashic-extension/akashic-label/lib/index.js"
 	}
 }
