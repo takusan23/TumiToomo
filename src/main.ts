@@ -11,7 +11,11 @@ export function main(param: GameMainParameterObject): void {
 	const scene = new g.Scene({
 		game: g.game,
 		// このシーンで利用するアセットのIDを列挙し、シーンに通知します
-		assetIds: ["toomo", "kiyomizu", "n_kou", "result", "doutei_toomo", "inu", "gozyou", "korean"]
+		assetIds: [
+			"toomo", "kiyomizu", "n_kou", "result", "doutei_toomo", "inu", "gozyou", "korean", "kiyomizu", "rotate",
+			// tslint:disable-next-line: max-line-length
+			"doumo_toomo", "gogo_no_zyugyou", "hattastu_syougai", "karaoke_ikuka", "katsudon_channel", "korean_sound", "n_kou_taigaku", "san_ryuunen", "teacher_block"
+		]
 	})
 
 	let time = 60 // 制限時間
@@ -79,13 +83,26 @@ export function main(param: GameMainParameterObject): void {
 				// 残り時間表示用ラベル
 				const timeLabel = new g.Label({
 					scene: scene,
-					text: "残り時間: 60",
+					text: "残り時間: 60秒",
 					font: font,
 					fontSize: font.size / 2,
 					textColor: "black",
 					x: 0.7 * g.game.width
 				})
 				scene.append(timeLabel)
+
+				// 回転ボタン
+				const rotateButton = new g.Sprite({
+					scene: scene,
+					src: scene.assets["rotate"],
+					tag: "rotate" // 回転ボタンかどうか識別用。
+				})
+				// 位置調整
+				rotateButton.x = g.game.width - rotateButton.width
+				rotateButton.y = g.game.height - rotateButton.height - 50
+				scene.append(rotateButton)
+				// クリックイベントを使うためには「touchable」をtrueにしないといけないらしい。pointDownのドキュメントには書いてなかったぞおい
+				rotateButton.touchable = true
 
 				// 地面
 				const base = new g.FilledRect({
@@ -187,8 +204,24 @@ export function main(param: GameMainParameterObject): void {
 						box.vec2(-27, -31.5)
 					]
 				}
+				const kiyomizu: BodyObject = {
+					assetSrc: "kiyomizu",
+					bodyName: "清水寺",
+					sharpList: [
+						box.vec2(8, -37),
+						box.vec2(22, -27),
+						box.vec2(26, -14),
+						box.vec2(23, 17),
+						box.vec2(11, 35),
+						box.vec2(-1, 36),
+						box.vec2(-15, 19),
+						box.vec2(-27, 2),
+						box.vec2(-24, -22),
+						box.vec2(-5, -37)
+					]
+				}
 				// 利用可能な物体一覧
-				const bodyTemplateList = [nKou, dt, toomo, remon, gozyou, korean]
+				const bodyTemplateList = [nKou, dt, toomo, remon, gozyou, korean, kiyomizu]
 
 				/** 一番高いところにある物体の高さを取得します。
 				 * @param defaultValue もし取れなかった場合は返り値になります
@@ -253,6 +286,14 @@ export function main(param: GameMainParameterObject): void {
 						entity.modified()
 					})
 
+					// 回転ボタン押す
+					rotateButton.pointDown.add(() => {
+						entity.angle += 45
+						// Spriteの変更だけではだめなので
+						createBody.b2body.SetAngle(box.radian(entity.angle))
+						entity.modified()
+					})
+
 					// 押すまでオブジェクトを睡眠？停止状態にする。寝てる間はDynamicでも動かない
 					// 睡眠状態を利用可能にする
 					createBody.b2body.SetSleepingAllowed(true)
@@ -266,21 +307,28 @@ export function main(param: GameMainParameterObject): void {
 						createBody.entity.modified()
 					})
 					// クリックを離したとき。
-					const pointDown = () => {
-						// おはようのオーディションして～かみｇ
-						createBody.b2body.SetAwake(true)
-						isNotTouchObjctExists = false
-						// 落としたら移動できないようにイベント消す
-						scene.pointMoveCapture.removeAll()
-						// クリックを離したときは他でも使っているためremoveAllすると影響受けるので
-						scene.pointUpCapture.remove(pointDown)
-						// カメラの移動と合わせて動かすイベント削除
-						entity.update.removeAll()
-						// 配列追加（一番高いなどを求めるときに使う。）
-						bodyList.push(createBody)
+					const pointUp: g.HandlerFunction<g.PointUpEvent> = (event) => {
+						// クリックを離したときの処理を行っていいか。trueで実行可能
+						const isPointUp = checkClickable(event)
+						if (isPointUp) {
+							// クリックした場所が回転ボタンだったら無効
+							// おはようのオーディションして～かみｇ
+							createBody.b2body.SetAwake(true)
+							isNotTouchObjctExists = false
+							// 落としたら移動できないようにイベント消す
+							scene.pointMoveCapture.removeAll()
+							// クリックを離したときは他でも使っているためremoveAllすると影響受けるので
+							scene.pointUpCapture.remove(pointUp)
+							// カメラの移動と合わせて動かすイベント削除
+							entity.update.removeAll()
+							// 落としたら回転ボタンは押せなくする
+							rotateButton.pointDown.removeAll()
+							// 配列追加（一番高いなどを求めるときに使う。）
+							bodyList.push(createBody)
+						}
 					}
 					// クリックを離したときイベント登録。
-					scene.pointUpCapture.add(pointDown)
+					scene.pointUpCapture.add(pointUp)
 					return createBody
 				}
 
@@ -288,9 +336,14 @@ export function main(param: GameMainParameterObject): void {
 				createObject(nKou, (g.game.width / 2))
 				/** クリック連打対策用変数。クリック可能な場合はtrue。クリックすると物体生成までクリックできません。 */
 				let clickable = true
-				scene.pointUpCapture.add(() => {
+				scene.pointUpCapture.add((event) => {
+					const isPointUp = checkClickable(event)
 					// クリック可能か？
-					if (clickable) {
+					if (isPointUp && clickable) {
+						// 音声再生
+						const audioList = ["doumo_toomo", "gogo_no_zyugyou", "hattastu_syougai", "karaoke_ikuka", "katsudon_channel", "korean_sound", "n_kou_taigaku", "san_ryuunen", "teacher_block"]
+						const audioRandomValue = random(0, audioList.length - 1)
+						sound(audioList[audioRandomValue]).play()
 						// クリックできないように
 						clickable = false
 						// 2秒後に生成
@@ -303,6 +356,23 @@ export function main(param: GameMainParameterObject): void {
 						}, 2000)
 					}
 				})
+
+				/** クリックしたところに回転ボタンが存在するか確認する関数。
+				 * @param　event クリックイベントで取れるやつ。g.PointEventってやつ
+				 * @returns クリック可能な場合（回転ボタンを押していない）はtrue、回転ボタンを押しているときはfalse
+				 */
+				const checkClickable = (event: g.PointEvent): boolean => {
+					let click_ok = false
+					if (typeof event.target !== "undefined" && typeof event.target.tag !== "undefined") {
+						// タグに中身があるとき
+						// 画像のタグが回転ボタンかどうか。回転ボタンだとfalse（trueを反転）
+						click_ok = !(event.target.tag === "rotate")
+					} else {
+						// タグに中身が無いとき
+						click_ok = true
+					}
+					return click_ok
+				}
 
 				// カメラ移動、スコアラベル、時間ラベル移動など
 				const camera = new g.Camera2D({ game: g.game })
@@ -332,6 +402,9 @@ export function main(param: GameMainParameterObject): void {
 					scoreLabel.modified()
 					timeLabel.y = camera.y
 					timeLabel.modified()
+					// 回転ボタンも移動
+					rotateButton.y = camera.y + 100
+					rotateButton.modified()
 					// 一番高いところをスコアに
 					// 小数点以下切り捨て
 					g.game.vars.gameState.score = Math.round(abs)
@@ -490,5 +563,13 @@ export function main(param: GameMainParameterObject): void {
 	})
 	// タイトル画面へ画面切り替え。
 	g.game.pushScene(titleScene)
+
+	/** 音声素材を返す
+	 * @param assetIds 音声素材の名前。assetIdに追加しないとだめだよ
+	 * @returns AudioAsset
+	 */
+	const sound = (assetId: string): g.AudioAsset => {
+		return (scene.assets[assetId] as g.AudioAsset)
+	}
 
 }
