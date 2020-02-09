@@ -49,6 +49,10 @@ export function main(param: GameMainParameterObject): void {
 			// 5秒引いておく（タイトル表示時間）
 			time -= 5
 			scene.loaded.add(() => {
+
+				const background = new g.FilledRect({ scene: scene, cssColor: "white", width: g.game.width, height: g.game.height })
+				scene.append(background)
+
 				// ここからゲーム内容を記述します
 
 				// 物理エンジンの世界を生成する
@@ -405,6 +409,9 @@ export function main(param: GameMainParameterObject): void {
 					// 回転ボタンも移動
 					rotateButton.y = camera.y + 100
 					rotateButton.modified()
+					// 背景も移動
+					background.y = camera.y
+					background.modified()
 					// 一番高いところをスコアに
 					// 小数点以下切り捨て
 					g.game.vars.gameState.score = Math.round(abs)
@@ -455,6 +462,9 @@ export function main(param: GameMainParameterObject): void {
 						// カメラ戻す
 						camera.y = 0
 						camera.modified()
+						// 背景も移動
+						background.y = 0
+						background.modified()
 						// すべてのイベント削除
 						scene.update.removeAll()
 						scene.pointDownCapture.removeAll()
