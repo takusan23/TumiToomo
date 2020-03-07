@@ -14,7 +14,7 @@ export function main(param: GameMainParameterObject): void {
 		assetIds: [
 			"toomo", "kiyomizu", "n_kou", "result", "doutei_toomo", "inu", "gozyou", "korean", "kiyomizu", "rotate",
 			// tslint:disable-next-line: max-line-length
-			"doumo_toomo", "gogo_no_zyugyou", "hattastu_syougai", "karaoke_ikuka", "katsudon_channel", "korean_sound", "n_kou_taigaku", "san_ryuunen", "teacher_block"
+			"doumo_toomo", "gogo_no_zyugyou", "hattastu_syougai", "karaoke_ikuka", "katsudon_channel", "korean_sound", "n_kou_taigaku", "san_ryuunen", "teacher_block", "kanemoti"
 		]
 	})
 
@@ -240,8 +240,18 @@ export function main(param: GameMainParameterObject): void {
 					box.vec2(-5, -37)
 				]
 			}
+			const kanemoti: BodyObject = {
+				assetSrc: "kanemoti",
+				bodyName: "年収2万円",
+				sharpList: [
+					box.vec2(0, -31.5),
+					box.vec2(47, 31.5),
+					box.vec2(-47, 32.5),
+					box.vec2(-14, -31.5)
+				]
+			}
 			// 利用可能な物体一覧
-			const bodyTemplateList = [nKou, dt, toomo, remon, gozyou, korean, kiyomizu]
+			const bodyTemplateList = [nKou, dt, toomo, remon, gozyou, korean, kiyomizu, kanemoti]
 
 			/** 一番高いところにある物体の高さを取得します。
 			 * @param defaultValue もし取れなかった場合は返り値になります

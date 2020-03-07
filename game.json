@@ -162,6 +162,18 @@
 			"width": 100,
 			"height": 94,
 			"path": "image/rotate.png"
+		},
+		"icon": {
+			"type": "image",
+			"width": 160,
+			"height": 160,
+			"path": "image/icon.png"
+		},
+		"kanemoti": {
+			"type": "image",
+			"width": 100,
+			"height": 65,
+			"path": "image/kanemoti.png"
 		}
 	},
 	"environment": {
